@@ -5,15 +5,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 
-import javax.xml.crypto.Data;
-import java.sql.Time;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @Classname TaoBaoBuy
@@ -23,12 +20,10 @@ import java.util.List;
  */
 public class TaoBaoBuy {
 
-    public static void main(String[] args) throws InterruptedException {
+
+    public static void goBuy() throws InterruptedException {
         System.setProperty("webdriver.chrome.driver", "E:\\work\\account\\selenium-study\\selenium-part1\\src\\main\\resources\\chromedriver.exe");
         WebDriver webDriver = new ChromeDriver();
-        System.out.println(webDriver.getPageSource());
-        System.out.println(webDriver.getWindowHandle());
-        System.out.println(webDriver.getWindowHandles());
         //跳到这url
         webDriver.get("https://www.taobao.com");
         while (true){
@@ -36,26 +31,33 @@ public class TaoBaoBuy {
             List<WebElement> elements = webDriver.findElements(By.linkText("亲，请登录"));
             if(!elements.isEmpty()){
                 //休眠五分钟去登陆
-                Thread.sleep(60 * 5 * 1000);
+                try {
+                    Thread.sleep(60 * 1 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }else{
                 System.out.println("登录成功 退出登录");
                 break;
             }
         }
         //获取当前时间戳
-        long epochSecond = Instant.now().getEpochSecond();
+        long epochSecond = Instant.now().toEpochMilli();
         //获取当前时间
-        long l = LocalDate.now().atStartOfDay().plusHours(20).atZone(ZoneId.systemDefault()).toEpochSecond();
+        long l = LocalDate.now().atStartOfDay().plusHours(20).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         System.out.println(l);
         LocalDateTime.now().atZone(ZoneId.systemDefault());
         //刷新购物车界面
         webDriver.get("https://cart.taobao.com/cart.htm");
+        //还剩一百毫秒的时候进行抢购
         while (true){
             //进行刷新
-            if(l > epochSecond - 1){
+            if((l - 100)> epochSecond){
                 //睡眠一毫秒
                 Thread.sleep(1);
                 System.out.println("当前时间还没有到");
+                //刷新购物车界面
+                webDriver.get("https://cart.taobao.com/cart.htm");
                 epochSecond = Instant.now().getEpochSecond();
             }else{
                 //跳出循环 进行添加购物车 点击结算，选择全选按钮
@@ -69,7 +71,7 @@ public class TaoBaoBuy {
             //点击结算按钮
             WebElement jGo = null;
             try {
-                 jGo = webDriver.findElement(By.id("J_Go"));
+                jGo = webDriver.findElement(By.id("J_Go"));
             }catch (Exception e){
                 //页面都没有了进行跳转到购物车
                 webDriver.get("https://cart.taobao.com/cart.htm");
@@ -95,6 +97,20 @@ public class TaoBaoBuy {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        for (int i = 0; i < 2; i++) {
+            Thread thread = new Thread(() -> {
+                try {
+                    goBuy();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            thread.start();
+        }
+        //获取当前时间戳
     }
 
 }
